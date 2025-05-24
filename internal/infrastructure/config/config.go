@@ -22,7 +22,7 @@ type Env struct {
 	DBUser            string        `mapstructure:"DB_USER"`
 	DBPass            string        `mapstructure:"DB_PASS"`
 	DBName            string        `mapstructure:"DB_NAME"`
-	DBSSLMode         string        `mapstructure:"DB_SSL_MODE"`
+	DBSSLMode         string        `mapstructure:"DB_SSLMODE"`
 	JwtSecretKey      []byte        // JWT_SECRET_KEY
 	JwtExpireDuration time.Duration // JWT_ACCESS_EXPIRE_DURATION
 	SMTPHost          string        `mapstructure:"SMTP_HOST"`
