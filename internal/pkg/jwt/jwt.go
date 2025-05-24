@@ -11,7 +11,7 @@ import (
 )
 
 type IJwt interface {
-	Create(userID uuid.UUID, role enum.UserRole) (string, error)
+	Create(userID string, role enum.UserRole) (string, error)
 	Decode(tokenString string, claims *Claims) error
 	Validate(token string) (ValidateJWTResponse, error)
 }
@@ -38,10 +38,10 @@ func NewJwt(exp time.Duration, secret []byte) IJwt {
 	}
 }
 
-func (j *jwtStruct) Create(userID uuid.UUID, role enum.UserRole) (string, error) {
+func (j *jwtStruct) Create(userID string, role enum.UserRole) (string, error) {
 	claims := Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
-			Subject:   userID.String(),
+			Subject:   userID,
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(j.exp)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},

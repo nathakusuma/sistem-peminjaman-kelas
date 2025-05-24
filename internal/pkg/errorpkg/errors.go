@@ -99,5 +99,5 @@ func ErrNoBearerToken() *ResponseError {
 func ErrEmailAlreadyRegistered() *ResponseError {
 	return newError(http.StatusConflict,
 		"email-already-registered",
-		"Email already registered. Please login or use another email.")
+		"Username already registered. Please login or use another email.")
 }
