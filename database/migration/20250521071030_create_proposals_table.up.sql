@@ -1,6 +1,6 @@
 CREATE TABLE proposals (
     id UUID PRIMARY KEY,
-    proposer_id VARCHAR(20) NOT NULL REFERENCES users (id),
+    proposer_email VARCHAR(20) NOT NULL REFERENCES users (email),
     course VARCHAR(50) NOT NULL,
     class_id VARCHAR(3) NOT NULL,
     lecturer VARCHAR(255) NOT NULL,
