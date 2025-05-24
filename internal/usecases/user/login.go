@@ -8,8 +8,8 @@ import (
 	"github.com/nathakusuma/sistem-peminjaman-kelas/internal/pkg/log"
 )
 
-func (s *userService) Login(ctx context.Context, email, password string) (string, *dto.UserResponse, error) {
-	user, err := s.repo.GetUserByEmail(email)
+func (s *userService) Login(ctx context.Context, req *dto.LoginRequest) (string, *dto.UserResponse, error) {
+	user, err := s.repo.GetUserByEmail(req.Email)
 	if err != nil {
 		if err.Error() == "user not found" {
 			return "", nil, errorpkg.ErrCredentialsNotMatch()
@@ -19,7 +19,7 @@ func (s *userService) Login(ctx context.Context, email, password string) (string
 		return "", nil, errorpkg.ErrInternalServer()
 	}
 
-	if !s.bcrypt.Compare(password, user.PasswordHash) {
+	if !s.bcrypt.Compare(req.Password, user.PasswordHash) {
 		return "", nil, errorpkg.ErrCredentialsNotMatch()
 	}
 

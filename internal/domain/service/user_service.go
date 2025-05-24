@@ -6,5 +6,6 @@ import (
 )
 
 type IUserService interface {
-	Login(ctx context.Context, email, password string) (string, *dto.UserResponse, error)
+	Register(ctx context.Context, req *dto.RegisterRequest) (string, *dto.UserResponse, error)
+	Login(ctx context.Context, req *dto.LoginRequest) (string, *dto.UserResponse, error)
 }

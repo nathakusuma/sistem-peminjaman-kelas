@@ -22,6 +22,34 @@ func NewUserHandler(svc service.IUserService, val validator.IValidator) *UserHan
 	}
 }
 
+func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var req dto.RegisterRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		SendError(w, errorpkg.ErrFailParseRequest())
+		return
+	}
+
+	if err := h.val.ValidateStruct(req); err != nil {
+		SendError(w, err)
+		return
+	}
+
+	token, user, err := h.svc.Register(ctx, &req)
+	if err != nil {
+		SendError(w, err)
+		return
+	}
+
+	response := dto.LoginResponse{
+		Token: token,
+		User:  user,
+	}
+
+	SendJSON(ctx, w, http.StatusCreated, response)
+}
+
 func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -36,7 +64,7 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, user, err := h.svc.Login(ctx, req.Username, req.Password)
+	token, user, err := h.svc.Login(ctx, &req)
 	if err != nil {
 		SendError(w, err)
 		return

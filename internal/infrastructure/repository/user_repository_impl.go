@@ -2,9 +2,11 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/nathakusuma/sistem-peminjaman-kelas/internal/domain/entity"
 	"github.com/nathakusuma/sistem-peminjaman-kelas/internal/domain/repository"
@@ -36,6 +38,11 @@ func (r *userRepository) CreateUser(user *entity.User) error {
 	)
 
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if ok := errors.As(err, &pgErr); ok && pgErr.Code == "23505" {
+			return errors.New("user already exists")
+		}
+
 		return fmt.Errorf("failed to create user: %w", err)
 	}
 

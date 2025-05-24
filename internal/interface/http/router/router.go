@@ -19,6 +19,7 @@ func NewRouter(userHandler *handler.UserHandler) http.Handler {
 
 	// User routes
 	mux.HandleFunc("POST /api/v1/auth/login", userHandler.Login)
+	mux.HandleFunc("POST /api/v1/auth/register", userHandler.Register)
 
 	// Root endpoint
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
