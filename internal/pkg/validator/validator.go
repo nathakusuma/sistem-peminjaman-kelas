@@ -33,7 +33,7 @@ var (
 func NewValidator() IValidator {
 	once.Do(func() {
 		id := idlocales.New()
-		translator := ut.New(id)
+		translator := ut.New(id, id)
 
 		trans, found := translator.GetTranslator("id")
 		if !found {
