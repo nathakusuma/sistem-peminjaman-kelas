@@ -2,11 +2,12 @@ package handler
 
 import (
 	"encoding/json"
+	"net/http"
+
 	"github.com/nathakusuma/sistem-peminjaman-kelas/internal/domain/service"
 	"github.com/nathakusuma/sistem-peminjaman-kelas/internal/interface/http/dto"
 	"github.com/nathakusuma/sistem-peminjaman-kelas/internal/pkg/errorpkg"
 	"github.com/nathakusuma/sistem-peminjaman-kelas/internal/pkg/validator"
-	"net/http"
 )
 
 type UserHandler struct {
@@ -26,18 +27,18 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	var req dto.LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		sendError(w, errorpkg.ErrFailParseRequest())
+		SendError(w, errorpkg.ErrFailParseRequest())
 		return
 	}
 
 	if err := h.val.ValidateStruct(req); err != nil {
-		sendError(w, err)
+		SendError(w, err)
 		return
 	}
 
 	token, user, err := h.svc.Login(ctx, req.Username, req.Password)
 	if err != nil {
-		sendError(w, err)
+		SendError(w, err)
 		return
 	}
 
@@ -46,5 +47,5 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 		User:  user,
 	}
 
-	sendJSON(ctx, w, http.StatusOK, response)
+	SendJSON(ctx, w, http.StatusOK, response)
 }

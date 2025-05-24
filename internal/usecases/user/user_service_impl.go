@@ -13,8 +13,14 @@ type userService struct {
 	jwt    jwt.IJwt
 }
 
-func NewUserService(userRepo repository.IUserRepository) service.IUserService {
+func NewUserService(
+	userRepo repository.IUserRepository,
+	bcrypt bcrypt.IBcrypt,
+	jwt jwt.IJwt,
+) service.IUserService {
 	return &userService{
-		repo: userRepo,
+		repo:   userRepo,
+		bcrypt: bcrypt,
+		jwt:    jwt,
 	}
 }

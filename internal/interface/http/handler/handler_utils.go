@@ -12,7 +12,7 @@ import (
 	"github.com/nathakusuma/sistem-peminjaman-kelas/internal/pkg/validator"
 )
 
-func sendError(w http.ResponseWriter, err error) {
+func SendError(w http.ResponseWriter, err error) {
 	var respErr *errorpkg.ResponseError
 
 	typePrefix := config.GetEnv().AppURL + "/errors"
@@ -46,11 +46,11 @@ func sendError(w http.ResponseWriter, err error) {
 	)
 }
 
-func sendJSON(ctx context.Context, w http.ResponseWriter, status int, data interface{}) {
+func SendJSON(ctx context.Context, w http.ResponseWriter, status int, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	if err := json.NewEncoder(w).Encode(data); err != nil {
 		log.Error(ctx).Err(err).Msg("failed to encode response to JSON")
-		sendError(w, errorpkg.ErrInternalServer())
+		SendError(w, errorpkg.ErrInternalServer())
 	}
 }
