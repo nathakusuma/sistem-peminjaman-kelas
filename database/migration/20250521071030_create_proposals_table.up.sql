@@ -1,0 +1,12 @@
+CREATE TABLE proposals (
+    id UUID PRIMARY KEY,
+    proposer_id VARCHAR(20) NOT NULL REFERENCES users (id),
+    course VARCHAR(50) NOT NULL,
+    class_id VARCHAR(3) NOT NULL,
+    lecturer VARCHAR(255) NOT NULL,
+    starts_at TIMESTAMP NOT NULL,
+    ends_at TIMESTAMP NOT NULL,
+    occupancy SMALLINT NOT NULL,
+    note VARCHAR(1000),
+    created_at TIMESTAMP NOT NULL DEFAULT now()
+);
