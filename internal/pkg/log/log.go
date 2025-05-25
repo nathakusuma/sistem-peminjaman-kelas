@@ -68,7 +68,7 @@ func addContextFields(ctx context.Context, event *zerolog.Event) *zerolog.Event 
 	}
 
 	// Extract user ID from context if it exists
-	if userID := ctx.Value(ctxkey.UserID); userID != nil {
+	if userID := ctx.Value(ctxkey.UserEmail); userID != nil {
 		event = event.Interface("requester.id", userID)
 	}
 

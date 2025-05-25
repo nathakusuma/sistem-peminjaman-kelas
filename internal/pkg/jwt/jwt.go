@@ -4,14 +4,13 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/google/uuid"
 
 	"github.com/nathakusuma/sistem-peminjaman-kelas/internal/domain/enum"
 	"github.com/nathakusuma/sistem-peminjaman-kelas/internal/pkg/errorpkg"
 )
 
 type IJwt interface {
-	Create(userID string, role enum.UserRole) (string, error)
+	Create(userEmail string, role enum.UserRole) (string, error)
 	Decode(tokenString string, claims *Claims) error
 	Validate(token string) (ValidateJWTResponse, error)
 }
@@ -22,8 +21,8 @@ type Claims struct {
 }
 
 type ValidateJWTResponse struct {
-	UserID uuid.UUID
-	Role   enum.UserRole
+	UserEmail string
+	Role      enum.UserRole
 }
 
 type jwtStruct struct {
@@ -89,13 +88,8 @@ func (j *jwtStruct) Validate(token string) (ValidateJWTResponse, error) {
 		return ValidateJWTResponse{}, errorpkg.ErrInvalidBearerToken()
 	}
 
-	userID, err := uuid.Parse(claims.Subject)
-	if err != nil {
-		return ValidateJWTResponse{}, errorpkg.ErrInvalidBearerToken()
-	}
-
 	return ValidateJWTResponse{
-		UserID: userID,
-		Role:   claims.Role,
+		UserEmail: claims.Subject,
+		Role:      claims.Role,
 	}, nil
 }

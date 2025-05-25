@@ -39,7 +39,8 @@ func RequireAuth(jwtService jwt.IJwt) func(http.Handler) http.Handler {
 			}
 
 			// Add user info to context
-			ctx := context.WithValue(r.Context(), ctxkey.UserID, validateResp.UserID.String())
+			ctx := context.WithValue(r.Context(), ctxkey.UserEmail, validateResp.UserEmail)
+			ctx = context.WithValue(ctx, ctxkey.UserRole, validateResp.Role)
 			r = r.WithContext(ctx)
 
 			next.ServeHTTP(w, r)
@@ -48,10 +49,18 @@ func RequireAuth(jwtService jwt.IJwt) func(http.Handler) http.Handler {
 }
 
 // RequireRole middleware checks if user has required role
-func RequireRole(roles ...enum.UserRole) func(http.Handler) http.Handler {
+func RequireRole(role enum.UserRole) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Extract role from JWT claims
+			userRole, ok := r.Context().Value(ctxkey.UserRole).(enum.UserRole)
+			if !ok {
+				handler.SendError(w, errorpkg.ErrForbiddenRole())
+				return
+			}
+			if userRole != role {
+				handler.SendError(w, errorpkg.ErrForbiddenRole())
+				return
+			}
 
 			next.ServeHTTP(w, r)
 		})

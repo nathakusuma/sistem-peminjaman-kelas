@@ -4,6 +4,5 @@ CREATE TABLE replies (
     room_id VARCHAR(20) NOT NULL REFERENCES rooms (id),
     is_approved BOOLEAN NOT NULL,
     note VARCHAR(1000),
-    created_at TIMESTAMP NOT NULL DEFAULT now(),
-    updated_at TIMESTAMP NOT NULL DEFAULT now()
+    created_at TIMESTAMP NOT NULL DEFAULT now()
 );
