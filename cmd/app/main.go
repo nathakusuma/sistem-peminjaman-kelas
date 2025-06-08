@@ -13,6 +13,7 @@ import (
 	"github.com/nathakusuma/sistem-peminjaman-kelas/internal/pkg/jwt"
 	"github.com/nathakusuma/sistem-peminjaman-kelas/internal/pkg/log"
 	"github.com/nathakusuma/sistem-peminjaman-kelas/internal/pkg/validator"
+	"github.com/nathakusuma/sistem-peminjaman-kelas/internal/usecases/proposal"
 	"github.com/nathakusuma/sistem-peminjaman-kelas/internal/usecases/user"
 )
 
@@ -39,15 +40,18 @@ func main() {
 
 	// Initialize repositories
 	userRepo := repository.NewUserRepository(db)
+	proposalRepo := repository.NewProposalRepository(db)
 
 	// Initialize services
 	userService := user.NewUserService(userRepo, bcryptInstance, jwtInstance)
+	proposalService := proposal.NewProposalService(proposalRepo)
 
 	// Initialize handlers
 	userHandler := handler.NewUserHandler(userService, validatorInstance)
+	proposalHandler := handler.NewProposalHandler(proposalService, validatorInstance)
 
 	// Initialize routes
-	mux := router.NewRouter(userHandler)
+	mux := router.NewRouter(userHandler, proposalHandler, jwtInstance)
 
 	log.Info(context.Background()).Msgf("Server is running on port %s", config.GetEnv().AppPort)
 

@@ -3,11 +3,17 @@ package router
 import (
 	"net/http"
 
+	"github.com/nathakusuma/sistem-peminjaman-kelas/internal/domain/enum"
 	"github.com/nathakusuma/sistem-peminjaman-kelas/internal/interface/http/handler"
 	"github.com/nathakusuma/sistem-peminjaman-kelas/internal/interface/http/middleware"
+	"github.com/nathakusuma/sistem-peminjaman-kelas/internal/pkg/jwt"
 )
 
-func NewRouter(userHandler *handler.UserHandler, proposalHandler *handler.ProposalHandler) http.Handler {
+func NewRouter(
+	userHandler *handler.UserHandler,
+	proposalHandler *handler.ProposalHandler,
+	jwtService jwt.IJwt,
+) http.Handler {
 	mux := http.NewServeMux()
 
 	// Health check endpoint
@@ -22,10 +28,32 @@ func NewRouter(userHandler *handler.UserHandler, proposalHandler *handler.Propos
 	mux.HandleFunc("POST /api/v1/auth/register", userHandler.Register)
 
 	// Proposal routes
-	mux.HandleFunc("POST /api/v1/proposals", proposalHandler.CreateProposal)
-	mux.HandleFunc("GET /api/v1/proposals", proposalHandler.GetProposals)
-	mux.HandleFunc("GET /api/v1/proposals/{id}", proposalHandler.GetProposalDetail)
-	mux.HandleFunc("POST /api/v1/proposals/{id}/reply", proposalHandler.CreateReply)
+	mux.Handle("POST /api/v1/proposals",
+		middleware.Chain(
+			http.HandlerFunc(proposalHandler.CreateProposal),
+			middleware.RequireAuth(jwtService),
+			middleware.RequireRole(enum.UserRoleStudent),
+		),
+	)
+	mux.Handle("GET /api/v1/proposals",
+		middleware.Chain(
+			http.HandlerFunc(proposalHandler.GetProposals),
+			middleware.RequireAuth(jwtService),
+		),
+	)
+	mux.Handle("GET /api/v1/proposals/{id}",
+		middleware.Chain(
+			http.HandlerFunc(proposalHandler.GetProposalDetail),
+			middleware.RequireAuth(jwtService),
+		),
+	)
+	mux.Handle("POST /api/v1/proposals/{id}/replies",
+		middleware.Chain(
+			http.HandlerFunc(proposalHandler.CreateReply),
+			middleware.RequireAuth(jwtService),
+			middleware.RequireRole(enum.UserRoleAdmin),
+		),
+	)
 
 	// Root endpoint
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -38,6 +66,6 @@ func NewRouter(userHandler *handler.UserHandler, proposalHandler *handler.Propos
 		w.Write([]byte(`{"message": "Sistem Peminjaman Kelas API", "version": "v1"}`))
 	})
 
-	// Apply middleware
+	// Apply global middleware
 	return middleware.Chain(mux, middleware.Logging, middleware.CORS)
 }

@@ -40,6 +40,7 @@ func (s *proposalService) GetProposals(ctx context.Context, pageReq *dto.Paginat
 
 	proposalResp := make([]*dto.ProposalResponse, len(proposals))
 	for i, proposal := range proposals {
+		proposalResp[i] = new(dto.ProposalResponse)
 		proposalResp[i].FromEntityMinimal(proposal)
 	}
 

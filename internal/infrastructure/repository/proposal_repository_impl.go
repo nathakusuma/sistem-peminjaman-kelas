@@ -2,11 +2,13 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/nathakusuma/sistem-peminjaman-kelas/internal/domain/entity"
 	"github.com/nathakusuma/sistem-peminjaman-kelas/internal/domain/repository"
@@ -51,7 +53,7 @@ type proposalScanDetail struct {
 	// Reply fields (nullable)
 	ReplyID         *uuid.UUID `db:"reply_id"`
 	ReplyAdminEmail *string    `db:"reply_admin_email"`
-	ReplyRoomID     *string    `db:"reply_room_id"`
+	ReplyRoom       *string    `db:"reply_room"`
 	ReplyApproved   *bool      `db:"reply_is_approved"`
 	ReplyNote       *string    `db:"reply_note"`
 	ReplyCreatedAt  *time.Time `db:"reply_created_at"`
@@ -182,7 +184,7 @@ func (r *proposalRepository) GetProposalDetail(ctx context.Context, id uuid.UUID
 			p.id, p.proposer_email, p.purpose, p.course, p.class_id, p.lecturer,
 			p.starts_at, p.ends_at, p.occupancy, p.note, p.created_at, 
 			u.name as proposer_name,
-			r.id as reply_id, r.admin_email as reply_admin_email, r.room_id as reply_room_id,
+			r.id as reply_id, r.admin_email as reply_admin_email, r.room as reply_room,
 			r.is_approved as reply_is_approved, r.note as reply_note, r.created_at as reply_created_at,
 			ua.name as reply_admin_name
 		FROM proposals p
@@ -233,7 +235,7 @@ func (r *proposalRepository) GetProposalDetail(ctx context.Context, id uuid.UUID
 		proposal.Reply = &entity.Reply{
 			ID:         *sp.ReplyID,
 			AdminEmail: *sp.ReplyAdminEmail,
-			RoomID:     *sp.ReplyRoomID,
+			Room:       *sp.ReplyRoom,
 			IsApproved: *sp.ReplyApproved,
 			Note:       sp.ReplyNote,
 			CreatedAt:  *sp.ReplyCreatedAt,
@@ -253,20 +255,29 @@ func (r *proposalRepository) GetProposalDetail(ctx context.Context, id uuid.UUID
 
 func (r *proposalRepository) CreateReply(ctx context.Context, reply *entity.Reply) error {
 	query := `
-		INSERT INTO replies (id, admin_email, room_id, is_approved, note, created_at)
+		INSERT INTO replies (id, admin_email, room, is_approved, note, created_at)
 		VALUES ($1, $2, $3, $4, $5, $6)
 	`
 
 	_, err := r.db.Exec(ctx, query,
 		reply.ID,
 		reply.AdminEmail,
-		reply.RoomID,
+		reply.Room,
 		reply.IsApproved,
 		reply.Note,
 		reply.CreatedAt,
 	)
 
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			if pgErr.ConstraintName == "replies_id_fkey" {
+				return fmt.Errorf("proposal not found: %w", pgErr)
+			} else if pgErr.ConstraintName == "replies_pkey" {
+				return fmt.Errorf("reply already exists for this proposal: %w", pgErr)
+			}
+		}
+
 		return fmt.Errorf("failed to add reply: %w", err)
 	}
 

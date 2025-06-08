@@ -1,3 +1,0 @@
-CREATE TABLE rooms (
-    id VARCHAR(20) PRIMARY KEY
-);

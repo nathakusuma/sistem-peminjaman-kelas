@@ -29,28 +29,10 @@ func ErrForbiddenUser() *ResponseError {
 		"You're not allowed to access this resource.")
 }
 
-func ErrNotSubscribed() *ResponseError {
-	return newError(http.StatusForbidden,
-		"not-subscribed",
-		"You're not subscribed to this feature. Please subscribe first.")
-}
-
 func ErrNotFound() *ResponseError {
 	return newError(http.StatusNotFound,
 		"not-found",
 		"Resource not found.")
-}
-
-func ErrFileTooLarge() *ResponseError {
-	return newError(http.StatusRequestEntityTooLarge,
-		"file-too-large",
-		"File size is too large. Please upload smaller file.")
-}
-
-func ErrInvalidFileFormat() *ResponseError {
-	return newError(http.StatusUnprocessableEntity,
-		"invalid-file-format",
-		"Invalid file format. Please upload a valid file.")
 }
 
 func ErrValidation() *ResponseError {
@@ -78,18 +60,6 @@ func ErrInvalidBearerToken() *ResponseError {
 		"Your auth session is invalid. Please renew your auth session.")
 }
 
-func ErrInvalidOTP() *ResponseError {
-	return newError(http.StatusUnauthorized,
-		"invalid-otp",
-		"Invalid OTP. Please try again or request a new OTP.")
-}
-
-func ErrInvalidRefreshToken() *ResponseError {
-	return newError(http.StatusUnauthorized,
-		"invalid-refresh-token",
-		"Auth session is invalid. Please login again.")
-}
-
 func ErrNoBearerToken() *ResponseError {
 	return newError(http.StatusUnauthorized,
 		"no-bearer-token",
@@ -100,4 +70,11 @@ func ErrEmailAlreadyRegistered() *ResponseError {
 	return newError(http.StatusConflict,
 		"email-already-registered",
 		"Email already registered. Please login or use another email.")
+}
+
+// Proposal
+func ErrReplyAlreadyExists() *ResponseError {
+	return newError(http.StatusConflict,
+		"reply-already-exists",
+		"Reply already exists for this proposal. You cannot create another reply.")
 }

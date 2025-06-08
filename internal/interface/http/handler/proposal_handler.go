@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/google/uuid"
 	"net/http"
+	"strconv"
 
 	"github.com/nathakusuma/sistem-peminjaman-kelas/internal/domain/service"
 	"github.com/nathakusuma/sistem-peminjaman-kelas/internal/interface/http/dto"
@@ -49,10 +50,24 @@ func (h *ProposalHandler) CreateProposal(w http.ResponseWriter, r *http.Request)
 func (h *ProposalHandler) GetProposals(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	var pageReq dto.PaginationRequest
-	if err := json.NewDecoder(r.Body).Decode(&pageReq); err != nil {
-		SendError(w, errorpkg.ErrFailParseRequest())
-		return
+	// Parse pagination from query parameters
+	pageReq := dto.PaginationRequest{
+		Page: 1, // default values
+		Size: 10,
+	}
+
+	// Parse page parameter
+	if pageStr := r.URL.Query().Get("page"); pageStr != "" {
+		if page, err := strconv.Atoi(pageStr); err == nil {
+			pageReq.Page = page
+		}
+	}
+
+	// Parse size parameter
+	if sizeStr := r.URL.Query().Get("size"); sizeStr != "" {
+		if size, err := strconv.Atoi(sizeStr); err == nil {
+			pageReq.Size = size
+		}
 	}
 
 	if err := h.val.ValidateStruct(pageReq); err != nil {
@@ -80,7 +95,7 @@ func (h *ProposalHandler) GetProposals(w http.ResponseWriter, r *http.Request) {
 func (h *ProposalHandler) GetProposalDetail(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	id, err := uuid.Parse(r.URL.Query().Get("id"))
+	id, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
 		SendError(w, errorpkg.ErrFailParseRequest())
 		return
@@ -92,11 +107,19 @@ func (h *ProposalHandler) GetProposalDetail(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	SendJSON(ctx, w, http.StatusOK, proposal)
+	SendJSON(ctx, w, http.StatusOK, map[string]interface{}{
+		"proposal": proposal,
+	})
 }
 
 func (h *ProposalHandler) CreateReply(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+
+	proposalID, err := uuid.Parse(r.PathValue("id"))
+	if err != nil {
+		SendError(w, errorpkg.ErrFailParseRequest())
+		return
+	}
 
 	var req dto.CreateReplyRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -104,12 +127,14 @@ func (h *ProposalHandler) CreateReply(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	req.ProposalID = proposalID
+
 	if err := h.val.ValidateStruct(req); err != nil {
 		SendError(w, err)
 		return
 	}
 
-	err := h.svc.CreateReply(ctx, &req)
+	err = h.svc.CreateReply(ctx, &req)
 	if err != nil {
 		SendError(w, err)
 		return

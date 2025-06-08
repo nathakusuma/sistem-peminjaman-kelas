@@ -27,7 +27,7 @@ type ProposalResponse struct {
 
 type ReplyResponse struct {
 	AdminName  string    `json:"admin_name"`
-	RoomID     string    `json:"room_id"`
+	Room       string    `json:"room"`
 	IsApproved bool      `json:"is_approved"`
 	Note       *string   `json:"note,omitempty"`
 	CreatedAt  time.Time `json:"created_at"`
@@ -57,7 +57,7 @@ func (r *ProposalResponse) FromEntityDetail(e *entity.Proposal) {
 	if e.Reply != nil {
 		r.Reply = &ReplyResponse{
 			AdminName:  e.Reply.Admin.Name,
-			RoomID:     e.Reply.RoomID,
+			Room:       e.Reply.Room,
 			IsApproved: e.Reply.IsApproved,
 			Note:       e.Reply.Note,
 			CreatedAt:  e.Reply.CreatedAt,
@@ -93,9 +93,9 @@ func (req *CreateProposalRequest) ToEntity(id uuid.UUID, userEmail string) *enti
 }
 
 type CreateReplyRequest struct {
-	ProposalID uuid.UUID `param:"proposal_id" validate:"required"`
-	RoomID     string    `json:"room_id" validate:"required,max=20"`
-	IsApproved bool      `json:"is_approved" validate:"required"`
+	ProposalID uuid.UUID `json:"-" validate:"required"`
+	Room       string    `json:"room" validate:"required_if=IsApproved true,max=20"`
+	IsApproved *bool     `json:"is_approved" validate:"required"`
 	Note       *string   `json:"note" validate:"omitempty,max=1000"`
 }
 
@@ -103,8 +103,8 @@ func (req *CreateReplyRequest) ToEntity(adminEmail string) *entity.Reply {
 	return &entity.Reply{
 		ID:         req.ProposalID,
 		AdminEmail: adminEmail,
-		RoomID:     req.RoomID,
-		IsApproved: req.IsApproved,
+		Room:       req.Room,
+		IsApproved: *req.IsApproved,
 		Note:       req.Note,
 		CreatedAt:  time.Now(),
 	}
