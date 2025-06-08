@@ -1,0 +1,765 @@
+openapi: 3.1.0
+info:
+  title: Sistem Peminjaman Kelas API
+  description: |
+    A classroom borrowing/booking system API that allows students to submit classroom usage proposals 
+    and administrators to approve or reject them.
+    
+    ## Authentication
+    This API uses JWT Bearer token authentication. Include the token in the Authorization header:
+    ```
+    Authorization: Bearer <your-jwt-token>
+    ```
+    
+    ## User Roles
+    - **Student**: Can create proposals and view their own proposals
+    - **Admin**: Can view all proposals and create replies (approve/reject)
+    
+    ## Error Handling
+    Errors follow RFC 7807 Problem Details format with additional validation error details.
+  version: 1.0.0
+
+servers:
+  - url: https://paw.nathakusuma.com/api/v1
+    description: Production server
+  - url: http://localhost:8080/api/v1
+    description: Development server
+
+security:
+  - BearerAuth: []
+
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      description: Check if the service is healthy
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    examples:
+                      - "OK"
+                  message:
+                    type: string
+                    examples:
+                      - "Service is healthy"
+
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register a new user
+      description: Register a new student account
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '409':
+          description: Email already registered
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '422':
+          description: Validation error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ValidationProblemDetails'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      description: Authenticate user and receive JWT token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '422':
+          description: Validation error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ValidationProblemDetails'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /proposals:
+    post:
+      tags:
+        - Proposals
+      summary: Create a new proposal
+      description: Create a new classroom usage proposal (students only)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProposalRequest'
+      responses:
+        '201':
+          description: Proposal created successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Access forbidden - requires student role
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '422':
+          description: Validation error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ValidationProblemDetails'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    get:
+      tags:
+        - Proposals
+      summary: Get proposals
+      description: |
+        Get list of proposals with pagination.
+        - **Students**: Only see their own proposals
+        - **Admins**: See all proposals
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          description: 'Page number (default: 1)'
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: size
+          in: query
+          description: 'Number of items per page (default: 10, max: 100)'
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+      responses:
+        '200':
+          description: List of proposals
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  proposals:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProposalListItem'
+                  pagination:
+                    $ref: '#/components/schemas/PaginationResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          description: Invalid pagination parameters
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ValidationProblemDetails'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /proposals/{id}:
+    get:
+      tags:
+        - Proposals
+      summary: Get proposal detail
+      description: |
+        Get detailed information about a specific proposal.
+        - **Students**: Only their own proposals
+        - **Admins**: Any proposal
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Proposal UUID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Proposal details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  proposal:
+                    $ref: '#/components/schemas/ProposalDetail'
+        '400':
+          description: Invalid UUID format
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Access forbidden - not your proposal
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Proposal not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /proposals/{id}/replies:
+    post:
+      tags:
+        - Proposals
+      summary: Create a reply to proposal
+      description: Create a reply (approve/reject) to a proposal (admins only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Proposal UUID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateReplyRequest'
+      responses:
+        '201':
+          description: Reply created successfully
+        '400':
+          description: Invalid UUID format
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Access forbidden - requires admin role
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Proposal not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Reply already exists for this proposal
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '422':
+          description: Validation error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ValidationProblemDetails'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from login endpoint
+
+  schemas:
+    # Request schemas
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 320
+          examples:
+            - "user@example.com"
+        password:
+          type: string
+          minLength: 8
+          maxLength: 72
+          examples:
+            - "password123"
+
+    RegisterRequest:
+      type: object
+      required:
+        - email
+        - password
+        - name
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 320
+          examples:
+            - "student@example.com"
+        password:
+          type: string
+          minLength: 8
+          maxLength: 72
+          examples:
+            - "password123"
+        name:
+          type: string
+          maxLength: 255
+          examples:
+            - "John Doe"
+
+    CreateProposalRequest:
+      type: object
+      required:
+        - purpose
+        - course
+        - class_id
+        - lecturer
+        - starts_at
+        - ends_at
+        - occupancy
+      properties:
+        purpose:
+          type: string
+          maxLength: 50
+          examples:
+            - "Kuliah Pengganti"
+        course:
+          type: string
+          maxLength: 50
+          examples:
+            - "Pengembangan Aplikasi Web"
+        class_id:
+          type: string
+          maxLength: 3
+          examples:
+            - "F"
+        lecturer:
+          type: string
+          maxLength: 255
+          examples:
+            - "Eriq Muhammad Adams Jonemaro"
+        starts_at:
+          type: string
+          format: date-time
+          examples:
+            - "2025-06-10T09:00:00Z"
+        ends_at:
+          type: string
+          format: date-time
+          examples:
+            - "2025-06-10T11:00:00Z"
+        occupancy:
+          type: integer
+          minimum: 1
+          maximum: 32767
+          examples:
+            - 30
+        note:
+          anyOf:
+            - type: string
+              maxLength: 1000
+            - type: "null"
+          examples:
+            - "Butuh yang ada layar besar"
+
+    CreateReplyRequest:
+      type: object
+      required:
+        - is_approved
+      properties:
+        room:
+          type: string
+          maxLength: 20
+          examples:
+            - "F2.1"
+          description: "Required if is_approved is true"
+        is_approved:
+          type: boolean
+          examples:
+            - true
+        note:
+          anyOf:
+            - type: string
+              maxLength: 1000
+            - type: "null"
+          examples:
+            - "Tolong jaga kebersihan setelah pemakaian"
+
+    # Response schemas
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          examples:
+            - "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        user:
+          $ref: '#/components/schemas/UserResponse'
+
+    UserResponse:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          examples:
+            - "user@example.com"
+        name:
+          type: string
+          examples:
+            - "John Doe"
+        role:
+          type: string
+          enum: [student, admin]
+          examples:
+            - "student"
+
+    ProposalListItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          examples:
+            - "01234567-89ab-cdef-0123-456789abcdef"
+        purpose:
+          type: string
+          examples:
+            - "Kuliah Pengganti"
+        proposer_name:
+          type: string
+          examples:
+            - "John Doe"
+        status:
+          type: string
+          enum: [pending, approved, rejected]
+          examples:
+            - "pending"
+
+    ProposalDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          examples:
+            - "01234567-89ab-cdef-0123-456789abcdef"
+        purpose:
+          type: string
+          examples:
+            - "Kuliah Pengganti"
+        proposer_name:
+          type: string
+          examples:
+            - "John Doe"
+        status:
+          type: string
+          enum: [pending, approved, rejected]
+          examples:
+            - "pending"
+        course:
+          type: string
+          examples:
+            - "Pengembangan Aplikasi Web"
+        class_id:
+          type: string
+          examples:
+            - "F"
+        lecturer:
+          type: string
+          examples:
+            - "Eriq Muhammad Adams Jonemaro"
+        starts_at:
+          type: string
+          format: date-time
+          examples:
+            - "2025-06-10T09:00:00Z"
+        ends_at:
+          type: string
+          format: date-time
+          examples:
+            - "2025-06-10T11:00:00Z"
+        occupancy:
+          type: integer
+          examples:
+            - 30
+        note:
+          anyOf:
+            - type: string
+            - type: "null"
+          examples:
+            - "Butuh yang ada layar besar"
+        created_at:
+          type: string
+          format: date-time
+          examples:
+            - "2025-06-08T10:30:00Z"
+        reply:
+          anyOf:
+            - $ref: '#/components/schemas/ReplyResponse'
+            - type: "null"
+
+    ReplyResponse:
+      type: object
+      properties:
+        admin_name:
+          type: string
+          examples:
+            - "Admin User"
+        room:
+          type: string
+          examples:
+            - "F2.1"
+        is_approved:
+          type: boolean
+          examples:
+            - true
+        note:
+          anyOf:
+            - type: string
+            - type: "null"
+          examples:
+            - "Tolong jaga kebersihan setelah pemakaian"
+        created_at:
+          type: string
+          format: date-time
+          examples:
+            - "2025-06-08T11:00:00Z"
+
+    PaginationResponse:
+      type: object
+      properties:
+        current_page:
+          type: integer
+          examples:
+            - 1
+        size:
+          type: integer
+          examples:
+            - 10
+        total_count:
+          type: integer
+          format: int64
+          examples:
+            - 25
+        total_pages:
+          type: integer
+          examples:
+            - 3
+        has_next:
+          type: boolean
+          examples:
+            - true
+        has_prev:
+          type: boolean
+          examples:
+            - false
+
+    # Error schemas
+    ProblemDetails:
+      type: object
+      properties:
+        type:
+          type: string
+          format: uri
+          examples:
+            - "http://localhost:8080/errors/validation-error"
+        title:
+          type: string
+          examples:
+            - "Validation Error"
+        status:
+          type: integer
+          examples:
+            - 422
+        detail:
+          type: string
+          examples:
+            - "There are invalid fields in your request"
+        instance:
+          type: string
+          format: uri
+          examples:
+            - "http://localhost:8080"
+        trace_id:
+          anyOf:
+            - type: string
+              format: uuid
+            - type: "null"
+          examples:
+            - "01234567-89ab-cdef-0123-456789abcdef"
+
+    ValidationProblemDetails:
+      allOf:
+        - $ref: '#/components/schemas/ProblemDetails'
+        - type: object
+          properties:
+            validation_errors:
+              type: array
+              items:
+                type: object
+                additionalProperties:
+                  type: object
+                  properties:
+                    tag:
+                      type: string
+                      examples:
+                        - "required"
+                    param:
+                      type: string
+                      examples:
+                        - ""
+                    translation:
+                      type: string
+                      examples:
+                        - "email wajib diisi"
+              examples:
+                - email:
+                    tag: "required"
+                    param: ""
+                    translation: "email wajib diisi"
+                - password:
+                    tag: "min"
+                    param: "8"
+                    translation: "password minimal harus 8 karakter"
+
+  responses:
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          example:
+            type: "http://localhost:8080/errors/no-bearer-token"
+            title: "No Bearer Token"
+            status: 401
+            detail: "You're not logged in. Please login first."
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          example:
+            type: "http://localhost:8080/errors/internal-server-error"
+            title: "Internal Server Error"
+            status: 500
+            detail: "Something went wrong in our server. Please try again later."
+
+  examples:
+    StudentLoginRequest:
+      summary: Student login
+      value:
+        email: "student@university.edu"
+        password: "studentpass123"
+
+    AdminLoginRequest:
+      summary: Admin login
+      value:
+        email: "admin@university.edu"
+        password: "adminpass123"
+
+    ClassroomProposal:
+      summary: Classroom usage proposal
+      value:
+        purpose: "Praktikum Database"
+        course: "CS205"
+        class_id: "B02"
+        lecturer: "Prof. John Anderson"
+        starts_at: "2025-06-15T14:00:00Z"
+        ends_at: "2025-06-15T16:00:00Z"
+        occupancy: 25
+        note: "Need computers with database software installed"
+
+    ApprovalReply:
+      summary: Approve proposal
+      value:
+        room: "Lab Computer 1"
+        is_approved: true
+        note: "Room is available and equipped with required software"
+
+    RejectionReply:
+      summary: Reject proposal
+      value:
+        room: ""
+        is_approved: false
+        note: "Room is already booked for that time slot"
+
+tags:
+  - name: Authentication
+    description: User authentication endpoints
+  - name: Proposals
+    description: Classroom proposal management
+  - name: Health
+    description: Service health check
