@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"github.com/nathakusuma/sistem-peminjaman-kelas/internal/domain/enum"
 	"os"
 	"sync"
 	"time"
@@ -12,10 +13,10 @@ import (
 )
 
 type Env struct {
-	Env               string        `mapstructure:"ENV"`
-	AppPort           string        `mapstructure:"APP_PORT"`
-	AppURL            string        `mapstructure:"APP_URL"`
+	Env               enum.Env      `mapstructure:"ENV"`
 	AppName           string        `mapstructure:"APP_NAME"`
+	BackendPort       string        `mapstructure:"BACKEND_PORT"`
+	BackendURL        string        `mapstructure:"BACKEND_URL"`
 	FrontendURL       string        `mapstructure:"FRONTEND_URL"`
 	DBHost            string        `mapstructure:"DB_HOST"`
 	DBPort            string        `mapstructure:"DB_PORT"`
@@ -47,8 +48,8 @@ func GetEnv() *Env {
 		// Enable environment variables first
 		viperInstance.AutomaticEnv()
 
-		// Check if APP_ENV is set in environment variables
-		if appEnv := os.Getenv("APP_ENV"); appEnv != "" {
+		// Check if ENV is set in environment variables
+		if appEnv := os.Getenv("ENV"); appEnv != "" {
 			handleEnvVariables(appEnv, viperInstance, env)
 		} else {
 			handleEnvFile(viperInstance, env)
@@ -66,7 +67,7 @@ func GetEnv() *Env {
 	return env
 }
 
-// handleEnvVariables handles the logic when APP_ENV is set in environment variables
+// handleEnvVariables handles the logic when ENV is set in environment variables
 func handleEnvVariables(appEnv string, viperInstance *viper.Viper, env *Env) {
 	log.Info().Msgf("[ENV] Using %s environment variables", appEnv)
 
@@ -76,7 +77,7 @@ func handleEnvVariables(appEnv string, viperInstance *viper.Viper, env *Env) {
 	}
 }
 
-// handleEnvFile handles the logic when APP_ENV is not set in environment variables
+// handleEnvFile handles the logic when ENV is not set in environment variables
 func handleEnvFile(viperInstance *viper.Viper, env *Env) {
 	if _, err := os.Stat(".env"); err != nil {
 		log.Fatal().Msg("[ENV] ENV is not set in environment variables")

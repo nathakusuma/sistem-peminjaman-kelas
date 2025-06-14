@@ -15,7 +15,7 @@ import (
 func SendError(w http.ResponseWriter, err error) {
 	var respErr *errorpkg.ResponseError
 
-	typePrefix := config.GetEnv().AppURL + "/errors"
+	typePrefix := config.GetEnv().BackendURL + "/errors"
 	w.Header().Set("Content-Type", "application/problem+json")
 
 	if errors.As(err, &respErr) {
@@ -23,7 +23,7 @@ func SendError(w http.ResponseWriter, err error) {
 		json.NewEncoder(w).Encode(
 			respErr.
 				WithTypePrefix(typePrefix).
-				WithInstance(config.GetEnv().AppURL), // TODO: pass request URL as parameter
+				WithInstance(config.GetEnv().BackendURL), // TODO: pass request URL as parameter
 		)
 		return
 	}
@@ -35,7 +35,7 @@ func SendError(w http.ResponseWriter, err error) {
 			errorpkg.ErrValidation().
 				WithValidationErrors(validationErr).
 				WithTypePrefix(typePrefix).
-				WithInstance(config.GetEnv().AppURL), // TODO: pass request URL as parameter
+				WithInstance(config.GetEnv().BackendURL), // TODO: pass request URL as parameter
 		)
 		return
 	}

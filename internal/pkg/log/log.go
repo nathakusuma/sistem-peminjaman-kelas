@@ -14,6 +14,7 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/nathakusuma/sistem-peminjaman-kelas/internal/domain/ctxkey"
+	"github.com/nathakusuma/sistem-peminjaman-kelas/internal/domain/enum"
 	"github.com/nathakusuma/sistem-peminjaman-kelas/internal/infrastructure/config"
 )
 
@@ -40,7 +41,7 @@ func NewLogger() *zerolog.Logger {
 		}
 
 		// Add file output only if not in test environment
-		if config.GetEnv().Env != "test" {
+		if config.GetEnv().Env != enum.EnvTesting {
 			fileWriter := &lumberjack.Logger{
 				Filename:   fmt.Sprintf("./storage/logs/app-%s.log", time.Now().Format("2006-01-02")),
 				LocalTime:  true,

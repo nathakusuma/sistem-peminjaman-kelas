@@ -53,9 +53,9 @@ func main() {
 	// Initialize routes
 	mux := router.NewRouter(userHandler, proposalHandler, jwtInstance)
 
-	log.Info(context.Background()).Msgf("Server is running on port %s", config.GetEnv().AppPort)
+	log.Info(context.Background()).Msgf("Server is running on port %s", config.GetEnv().BackendPort)
 
-	err := http.ListenAndServe(":"+config.GetEnv().AppPort, mux)
+	err := http.ListenAndServe(":"+config.GetEnv().BackendPort, mux)
 	if err != nil {
 		log.Fatal(context.Background()).Err(err).Msg("Failed to start server")
 	}
