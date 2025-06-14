@@ -1,7 +1,9 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/nathakusuma/sistem-peminjaman-kelas/internal/infrastructure/config"
 )
@@ -11,7 +13,9 @@ func CORS(next http.Handler) http.Handler {
 		// Get frontend URL from config
 		frontendURL := config.GetEnv().FrontendURL
 		if frontendURL == "" {
-			frontendURL = "*"
+			// replace https with ""
+			frontendURL = strings.Replace(frontendURL, "https://", "", 1)
+			fmt.Println(frontendURL)
 		}
 
 		w.Header().Set("Access-Control-Allow-Origin", frontendURL)
