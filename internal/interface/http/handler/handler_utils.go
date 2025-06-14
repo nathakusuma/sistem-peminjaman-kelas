@@ -15,7 +15,7 @@ import (
 func SendError(w http.ResponseWriter, err error) {
 	var respErr *errorpkg.ResponseError
 
-	typePrefix := config.GetEnv().BackendURL + "/errors"
+	typePrefix := config.GetEnv().FrontendURL + "/errors"
 	w.Header().Set("Content-Type", "application/problem+json")
 
 	if errors.As(err, &respErr) {
