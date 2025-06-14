@@ -12,6 +12,7 @@ import (
 	"github.com/nathakusuma/sistem-peminjaman-kelas/internal/pkg/bcrypt"
 	"github.com/nathakusuma/sistem-peminjaman-kelas/internal/pkg/jwt"
 	"github.com/nathakusuma/sistem-peminjaman-kelas/internal/pkg/log"
+	"github.com/nathakusuma/sistem-peminjaman-kelas/internal/pkg/mail"
 	"github.com/nathakusuma/sistem-peminjaman-kelas/internal/pkg/validator"
 	"github.com/nathakusuma/sistem-peminjaman-kelas/internal/usecases/proposal"
 	"github.com/nathakusuma/sistem-peminjaman-kelas/internal/usecases/user"
@@ -36,6 +37,7 @@ func main() {
 	// Initialize dependencies
 	bcryptInstance := bcrypt.GetBcrypt()
 	jwtInstance := jwt.NewJwt(config.GetEnv().JwtExpireDuration, config.GetEnv().JwtSecretKey)
+	mailer := mail.NewMailDialer()
 	validatorInstance := validator.NewValidator()
 
 	// Initialize repositories
@@ -44,7 +46,7 @@ func main() {
 
 	// Initialize services
 	userService := user.NewUserService(userRepo, bcryptInstance, jwtInstance)
-	proposalService := proposal.NewProposalService(proposalRepo)
+	proposalService := proposal.NewProposalService(proposalRepo, mailer)
 
 	// Initialize handlers
 	userHandler := handler.NewUserHandler(userService, validatorInstance)
