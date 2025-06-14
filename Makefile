@@ -1,9 +1,10 @@
 # Use the .env file to load environment variables
 -include .env
 
-POSTGRES_URL := postgres://$(DB_USER):$(DB_PASS)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=$(DB_SSLMODE)
+POSTGRES_URL := postgres://$(DB_USER):$(DB_PASS)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=disable
 
-MIGRATE_CMD=migrate -database "${POSTGRES_URL}" -path database/migration/
+MIGRATE_CMD=docker compose run --rm migrate -database "${POSTGRES_URL}" -path migration/
+SEED_CMD=docker compose exec -T db psql -U $(DB_USER) -d $(DB_NAME) -W $(DB_PASS) < database/seeder/
 
 # Targets for different migration commands
 .PHONY: up down status version force
@@ -27,3 +28,9 @@ migrate-version:
 # Force a specific version (replace <version> with the desired version)
 migrate-force:
 	$(MIGRATE_CMD) force $(version)
+
+seed-up:
+	$(SEED_CMD)up.sql
+
+seed-down:
+	$(SEED_CMD)down.sql
